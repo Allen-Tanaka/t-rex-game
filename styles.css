@@ -1,0 +1,156 @@
+:root {
+  --color-bg:           #1a1a2e;   /* deep navy-charcoal       */
+  --color-ground:       #e8c97a;   /* warm sand                */
+  --color-ground-dark:  #c4a44a;   /* shadow stripe on ground  */
+  --color-trex:         #e8c97a;   /* same sand — pixel dino   */
+  --color-obstacle:     #7ecba1;   /* sage green cacti         */
+  --color-cloud:        #2e3a5a;   /* muted navy cloud         */
+  --color-ui:           #e8c97a;   /* amber for HUD text       */
+  --color-ui-dim:       #6b6b9a;   /* dimmed purple for labels */
+  --color-overlay-bg:   rgba(26, 26, 46, 0.88);
+
+  --font-pixel: 'Press Start 2P', monospace;
+
+  --game-width:   800px;
+  --game-height:  260px;
+  --ground-h:     8px;
+  --ground-y:     200px;   /* px from top of game where ground sits  */
+
+  --trex-w:   48px;
+  --trex-h:   56px;
+  --trex-x:   72px;        /* fixed horizontal position               */
+  --trex-floor: calc(var(--ground-y) - var(--trex-h)); /* resting y   */
+}
+
+body{
+    background-color: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Press Start 2P', cursive;
+    color: var(--color-ui);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* HUD (score board) styles */
+.hud {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 600px;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+.hud__label { color: #6b6b9a; }
+.hud__value {
+    color: #e8c97a;
+    font-size: 11px;
+}
+.hud__label--right, .hud__value--right { margin-left: auto; }
+
+/* Game container */
+.game {
+    position: relative;
+    width: var(--game-width);
+    height: var(--game-height);
+    background-color: var(--color-bg);
+    overflow: hidden;
+    border: 2px solid var(--color-ui);
+    box-sizing: border-box;
+}
+
+/* Ground styles */
+.ground {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%;
+    height: var(--ground-h);
+    background-color: var(--color-ground);
+}
+/* trex character styles */
+.trex {
+    position: absolute;
+    top: var(--trex-floor);
+    left: var(--trex-x);
+    width: var(--trex-w);
+    height: var(--trex-h);
+    background-color: var(--color-trex);
+    box-sizing: border-box;
+    will-change: top;
+}
+.trex__body {
+    position: absolute;
+    top: 0; left: 8px;
+    width: 32px; height: 56px;
+    background-color: var(--color-trex);
+    border-radius: 6px 12px 4px 4px;
+}
+.trex__head {
+    position: absolute;
+    top: -18px; left: -2px;
+    width: 28px; height: 20px;
+    background-color: var(--color-trex);
+    border-radius: 4px 8px 4px 2px;
+}
+.trex__eye {
+    position: absolute;
+    top: 4px; left: 5px;
+    width: 5px; height: 5px;
+    background-color: #000;
+    border-radius: 50%;
+}
+.trex__mouth {
+    position: absolute;
+    bottom: 2px; right: 3px;
+    width: 10px; height: 2px;
+    background-color: #000;
+    border-radius:  2px;
+}
+.trex__arm {
+    position: absolute;
+    top: 14px; right: -6px;
+    width: 10px; height: 6px;
+    background-color: var(--color-trex);
+    border-radius: 2px 2px 4px 4px;
+}
+.trex__tail {
+    position: absolute;
+    bottom: 0; left: -8px;
+    width: 14px; height: 10px;
+    background-color: var(--color-trex);
+    border-radius: 4px 4px 2px 2px;
+    transform:rotate(-10deg);
+}
+.trex__legs {
+    position: absolute;
+    bottom: 0; left: 8px;
+    width: 32px; height: 20px;
+}
+.trex__leg {
+    position: absolute;
+    bottom: 0;
+    width: 10px; height: 20px;
+    background-color: var(--color-trex);
+    border-radius: 2px 2px 4px 4px;
+    transform-origin: top center;
+    transition: transform 0.5s linear;
+}
+.trex__leg--front   { right: 4px; }
+.trex__leg--back    { left: 4px; }
+/* trex character styles */
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 860px) {
+  :root {
+    --game-width: 94vw;
+  }
+  .hud { width: 94vw; }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .trex__leg {transition: none;}
+}
