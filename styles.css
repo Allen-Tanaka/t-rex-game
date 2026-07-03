@@ -65,7 +65,7 @@ body{
 /* Ground styles */
 .ground {
     position: absolute;
-    bottom: 0; left: 0;
+    top: var(--ground-y); left: 0; /* aligns with --trex-floor so the T-Rex's feet meet the line */
     width: 100%;
     height: var(--ground-h);
     background-color: var(--color-ground);
@@ -140,6 +140,16 @@ body{
 }
 .trex__leg--front   { right: 4px; }
 .trex__leg--back    { left: 4px; }
+
+/* Obstacle (cactus) styles. Width/height/left are set inline by JS per
+   obstacle since they're randomized; this rule just anchors every
+   obstacle's base to the ground line. */
+.obstacle {
+    position: absolute;
+    bottom: calc(var(--game-height) - var(--ground-y));
+    background-color: var(--color-obstacle);
+    border-radius: 2px;
+}
 
 /* Run-cycle leg poses: JS alternates these two classes on #trex while
    grounded, so the front/back legs swing opposite each other. */

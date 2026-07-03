@@ -1,8 +1,8 @@
 /* ==========================================================================
    T-REX JUMP GAME
    Steps implemented here: 1) game state & config, 2) game loop,
-   3) character movement (jumping + gravity).
-   Obstacle generation, collisions and scoring come in later steps.
+   3) character movement (jumping + gravity), 4) obstacle generation.
+   Collision detection and scoring come in later steps.
 
    Note: this file is loaded via a <script> tag at the very end of <body>,
    so the DOM is already fully parsed by the time this code runs — no
@@ -16,6 +16,7 @@
 // --- DOM references ----------------------------------------------------
 const gameEl = document.getElementById('game');
 const trexEl = document.getElementById('trex');
+const obstaclesEl = document.getElementById('obstacles');
 
 // --- Tunable physics/config constants -----------------------------------
 // Read the T-Rex's resting height (distance from the top of #game down to
@@ -37,6 +38,14 @@ const GRAVITY = 2000;           // px/s^2 — how fast vertical speed changes (p
 const JUMP_VELOCITY = 620;      // px/s   — upward speed applied the instant a jump starts
 const RUN_FRAME_INTERVAL = 110; // ms     — time between leg-animation frame swaps
 
+const OBSTACLE_SPEED = 320;          // px/s — how fast obstacles scroll toward the T-Rex
+const OBSTACLE_SPAWN_MIN_MS = 900;   // shortest gap before the next obstacle
+const OBSTACLE_SPAWN_MAX_MS = 1800;  // longest gap before the next obstacle
+const OBSTACLE_MIN_WIDTH = 14;       // px
+const OBSTACLE_MAX_WIDTH = 26;       // px
+const OBSTACLE_MIN_HEIGHT = 28;      // px
+const OBSTACLE_MAX_HEIGHT = 48;      // px
+
 // --- Mutable game state --------------------------------------------------
 // Everything that changes while the game plays lives in one object, so
 // it's easy to see at a glance and easy to reset() later on restart.
@@ -49,9 +58,15 @@ const state = {
   },
   runFrameElapsed: 0,     // ms accumulated since the last leg-frame swap
   runFrameToggle: false,  // false -> show "run-a" pose, true -> show "run-b" pose
+  obstacles: [],          // { el, x } for every obstacle currently on screen
+  obstacleSpawnIn: 0,     // ms remaining until the next obstacle spawns
 };
 
 let lastTimestamp = null; // previous frame's timestamp, used to compute delta-time
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
 
 /* ------------------------------------------------------------------ *
  * 3. CHARACTER MOVEMENT (jumping + gravity)
@@ -108,12 +123,59 @@ function renderTrex() {
 }
 
 /* ------------------------------------------------------------------ *
+ * 4. OBSTACLE GENERATION
+ * ------------------------------------------------------------------ */
+
+// Picks a random delay and resets the countdown to the next spawn.
+function scheduleNextObstacle() {
+  state.obstacleSpawnIn = randomBetween(OBSTACLE_SPAWN_MIN_MS, OBSTACLE_SPAWN_MAX_MS);
+}
+
+// Creates one obstacle element just off the right edge of the game and
+// starts tracking it in state.obstacles.
+function spawnObstacle() {
+  const width = randomBetween(OBSTACLE_MIN_WIDTH, OBSTACLE_MAX_WIDTH);
+  const height = randomBetween(OBSTACLE_MIN_HEIGHT, OBSTACLE_MAX_HEIGHT);
+  const startX = gameEl.clientWidth; // left edge starts right at the game's right edge
+
+  const el = document.createElement('div');
+  el.className = 'obstacle';
+  el.style.width = `${width}px`;
+  el.style.height = `${height}px`;
+  obstaclesEl.appendChild(el);
+
+  state.obstacles.push({ el, x: startX });
+}
+
+function updateObstacles(dtSeconds, dtMs) {
+  // Move every obstacle left, then drop the ones that have fully
+  // scrolled off-screen so the DOM and our tracking array don't grow
+  // without bound.
+  state.obstacles = state.obstacles.filter((obstacle) => {
+    obstacle.x -= OBSTACLE_SPEED * dtSeconds;
+    obstacle.el.style.left = `${obstacle.x}px`;
+
+    const isOffScreen = obstacle.x + obstacle.el.offsetWidth < 0;
+    if (isOffScreen) obstacle.el.remove();
+    return !isOffScreen;
+  });
+
+  // Count down to the next spawn; spawn and reschedule once it elapses.
+  state.obstacleSpawnIn -= dtMs;
+  if (state.obstacleSpawnIn <= 0) {
+    spawnObstacle();
+    scheduleNextObstacle();
+  }
+}
+
+/* ------------------------------------------------------------------ *
  * 2. GAME LOOP
  * ------------------------------------------------------------------ */
 
 function update(dtSeconds, dtMs) {
   updateTrexPhysics(dtSeconds);
   updateRunAnimation(dtMs);
+  updateObstacles(dtSeconds, dtMs);
 }
 
 function render() {
@@ -156,4 +218,5 @@ gameEl.addEventListener('mousedown', handleJumpInput);
  * START THE LOOP
  * ------------------------------------------------------------------ */
 
+scheduleNextObstacle();
 requestAnimationFrame(loop);
