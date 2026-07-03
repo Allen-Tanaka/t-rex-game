@@ -2,8 +2,8 @@
    T-REX JUMP GAME
    Steps implemented here: 1) game state & config, 2) game loop,
    3) character movement (jumping + gravity), 4) obstacle generation,
-   5) ground & background (cloud) scroll.
-   Collision detection and scoring come in later steps.
+   5) ground & background (cloud) scroll, 6) collision detection.
+   Scoring comes in a later step.
 
    Note: this file is loaded via a <script> tag at the very end of <body>,
    so the DOM is already fully parsed by the time this code runs — no
@@ -20,6 +20,7 @@ const trexEl = document.getElementById('trex');
 const obstaclesEl = document.getElementById('obstacles');
 const groundEl = document.getElementById('ground');
 const cloudsEl = document.getElementById('clouds');
+const overlayGameoverEl = document.getElementById('overlay-gameover');
 
 // --- Tunable physics/config constants -----------------------------------
 // Read the T-Rex's resting height (distance from the top of #game down to
@@ -55,6 +56,11 @@ const CLOUD_MIN_WIDTH = 30;            // px
 const CLOUD_MAX_WIDTH = 60;            // px
 const CLOUD_MIN_Y = 15;                // px from the top of .game
 const CLOUD_MAX_Y = 70;                // px from the top of .game
+
+// Shrinking each hitbox inward a bit makes near-miss grazes feel fair
+// instead of like a cheap hit.
+const TREX_HITBOX_INSET = 6;      // px
+const OBSTACLE_HITBOX_INSET = 2;  // px
 
 // --- Mutable game state --------------------------------------------------
 // Everything that changes while the game plays lives in one object, so
@@ -241,6 +247,42 @@ function updateClouds(dtSeconds) {
 }
 
 /* ------------------------------------------------------------------ *
+ * 6. COLLISION DETECTION
+ * ------------------------------------------------------------------ */
+
+// Returns an element's on-screen box, shrunk inward by `inset` px on
+// every side.
+function getHitbox(el, inset) {
+  const rect = el.getBoundingClientRect();
+  return {
+    left: rect.left + inset,
+    right: rect.right - inset,
+    top: rect.top + inset,
+    bottom: rect.bottom - inset,
+  };
+}
+
+// Standard axis-aligned bounding box (AABB) overlap test: two boxes
+// overlap unless one is entirely to a side of the other.
+function boxesOverlap(a, b) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+function isTrexHittingAnObstacle() {
+  const trexBox = getHitbox(trexEl, TREX_HITBOX_INSET);
+  return state.obstacles.some((obstacle) =>
+    boxesOverlap(trexBox, getHitbox(obstacle.el, OBSTACLE_HITBOX_INSET))
+  );
+}
+
+function gameOver() {
+  state.isRunning = false; // the loop stops calling update()/render() from the next frame on
+  trexEl.classList.add('trex--dead');
+  overlayGameoverEl.style.display = 'flex';
+  // Populating #final-score is added once the scoring step exists.
+}
+
+/* ------------------------------------------------------------------ *
  * 2. GAME LOOP
  * ------------------------------------------------------------------ */
 
@@ -250,6 +292,10 @@ function update(dtSeconds, dtMs) {
   updateObstacles(dtSeconds, dtMs);
   updateGroundScroll(dtSeconds);
   updateClouds(dtSeconds);
+
+  if (isTrexHittingAnObstacle()) {
+    gameOver();
+  }
 }
 
 function render() {
