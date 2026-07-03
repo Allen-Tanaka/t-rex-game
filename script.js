@@ -1,7 +1,8 @@
 /* ==========================================================================
    T-REX JUMP GAME
    Steps implemented here: 1) game state & config, 2) game loop,
-   3) character movement (jumping + gravity), 4) obstacle generation.
+   3) character movement (jumping + gravity), 4) obstacle generation,
+   5) ground & background (cloud) scroll.
    Collision detection and scoring come in later steps.
 
    Note: this file is loaded via a <script> tag at the very end of <body>,
@@ -17,6 +18,8 @@
 const gameEl = document.getElementById('game');
 const trexEl = document.getElementById('trex');
 const obstaclesEl = document.getElementById('obstacles');
+const groundEl = document.getElementById('ground');
+const cloudsEl = document.getElementById('clouds');
 
 // --- Tunable physics/config constants -----------------------------------
 // Read the T-Rex's resting height (distance from the top of #game down to
@@ -38,13 +41,20 @@ const GRAVITY = 2000;           // px/s^2 — how fast vertical speed changes (p
 const JUMP_VELOCITY = 620;      // px/s   — upward speed applied the instant a jump starts
 const RUN_FRAME_INTERVAL = 110; // ms     — time between leg-animation frame swaps
 
-const OBSTACLE_SPEED = 320;          // px/s — how fast obstacles scroll toward the T-Rex
+const GAME_SPEED = 320;              // px/s — how fast the ground/obstacles scroll toward the T-Rex
 const OBSTACLE_SPAWN_MIN_MS = 900;   // shortest gap before the next obstacle
 const OBSTACLE_SPAWN_MAX_MS = 1800;  // longest gap before the next obstacle
 const OBSTACLE_MIN_WIDTH = 14;       // px
 const OBSTACLE_MAX_WIDTH = 26;       // px
 const OBSTACLE_MIN_HEIGHT = 28;      // px
 const OBSTACLE_MAX_HEIGHT = 48;      // px
+
+const CLOUD_SPEED = GAME_SPEED * 0.35; // px/s — slower than the ground, for a parallax feel
+const CLOUD_COUNT = 3;                 // clouds on screen at once
+const CLOUD_MIN_WIDTH = 30;            // px
+const CLOUD_MAX_WIDTH = 60;            // px
+const CLOUD_MIN_Y = 15;                // px from the top of .game
+const CLOUD_MAX_Y = 70;                // px from the top of .game
 
 // --- Mutable game state --------------------------------------------------
 // Everything that changes while the game plays lives in one object, so
@@ -60,6 +70,8 @@ const state = {
   runFrameToggle: false,  // false -> show "run-a" pose, true -> show "run-b" pose
   obstacles: [],          // { el, x } for every obstacle currently on screen
   obstacleSpawnIn: 0,     // ms remaining until the next obstacle spawns
+  groundScrollX: 0,       // px, how far the ground texture has scrolled (grows negative)
+  clouds: [],             // { el, x, width } for every cloud currently on screen
 };
 
 let lastTimestamp = null; // previous frame's timestamp, used to compute delta-time
@@ -152,7 +164,7 @@ function updateObstacles(dtSeconds, dtMs) {
   // scrolled off-screen so the DOM and our tracking array don't grow
   // without bound.
   state.obstacles = state.obstacles.filter((obstacle) => {
-    obstacle.x -= OBSTACLE_SPEED * dtSeconds;
+    obstacle.x -= GAME_SPEED * dtSeconds;
     obstacle.el.style.left = `${obstacle.x}px`;
 
     const isOffScreen = obstacle.x + obstacle.el.offsetWidth < 0;
@@ -169,6 +181,66 @@ function updateObstacles(dtSeconds, dtMs) {
 }
 
 /* ------------------------------------------------------------------ *
+ * 5. GROUND & BACKGROUND SCROLL
+ * ------------------------------------------------------------------ */
+
+function updateGroundScroll(dtSeconds) {
+  // .ground has a repeating striped background-image; sliding its
+  // position left creates the scrolling-ground illusion. The pattern
+  // tiles automatically, so this can just keep decreasing forever with
+  // no wrap-around math needed.
+  state.groundScrollX -= GAME_SPEED * dtSeconds;
+  groundEl.style.backgroundPositionX = `${state.groundScrollX}px`;
+}
+
+// Gives one cloud element a new random size/height and horizontal
+// position. Used both to create a cloud and to recycle one that has
+// scrolled off-screen.
+function randomizeCloud(cloud, x) {
+  const width = randomBetween(CLOUD_MIN_WIDTH, CLOUD_MAX_WIDTH);
+  cloud.x = x;
+  cloud.width = width;
+  cloud.el.style.width = `${width}px`;
+  cloud.el.style.height = `${width * 0.5}px`;
+  cloud.el.style.top = `${randomBetween(CLOUD_MIN_Y, CLOUD_MAX_Y)}px`;
+}
+
+function createCloud(x) {
+  const el = document.createElement('div');
+  el.className = 'cloud';
+  cloudsEl.appendChild(el);
+
+  const cloud = { el, x: 0, width: 0 };
+  randomizeCloud(cloud, x);
+  return cloud;
+}
+
+// Spreads a fixed pool of clouds across the game once at startup. They
+// scroll and recycle themselves afterward, so there's no ongoing
+// spawn/despawn bookkeeping like obstacles need.
+function initClouds() {
+  const gameWidth = gameEl.clientWidth;
+  for (let i = 0; i < CLOUD_COUNT; i++) {
+    state.clouds.push(createCloud(randomBetween(0, gameWidth)));
+  }
+}
+
+function updateClouds(dtSeconds) {
+  const gameWidth = gameEl.clientWidth;
+  for (const cloud of state.clouds) {
+    cloud.x -= CLOUD_SPEED * dtSeconds;
+
+    // Once a cloud drifts fully past the left edge, send it back off
+    // past the right edge with a fresh random size/height for variety.
+    if (cloud.x + cloud.width < 0) {
+      randomizeCloud(cloud, gameWidth + randomBetween(0, 60));
+    }
+
+    cloud.el.style.left = `${cloud.x}px`;
+  }
+}
+
+/* ------------------------------------------------------------------ *
  * 2. GAME LOOP
  * ------------------------------------------------------------------ */
 
@@ -176,6 +248,8 @@ function update(dtSeconds, dtMs) {
   updateTrexPhysics(dtSeconds);
   updateRunAnimation(dtMs);
   updateObstacles(dtSeconds, dtMs);
+  updateGroundScroll(dtSeconds);
+  updateClouds(dtSeconds);
 }
 
 function render() {
@@ -219,4 +293,5 @@ gameEl.addEventListener('mousedown', handleJumpInput);
  * ------------------------------------------------------------------ */
 
 scheduleNextObstacle();
+initClouds();
 requestAnimationFrame(loop);

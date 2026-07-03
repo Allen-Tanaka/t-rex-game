@@ -69,6 +69,21 @@ body{
     width: 100%;
     height: var(--ground-h);
     background-color: var(--color-ground);
+    /* Repeating tick marks give the ground texture, so JS scrolling its
+       background-position actually reads as motion. */
+    background-image: repeating-linear-gradient(
+        90deg,
+        var(--color-ground-dark) 0px, var(--color-ground-dark) 6px,
+        transparent 6px, transparent 40px
+    );
+}
+
+/* Cloud styles. Size/position are set inline by JS since each cloud is
+   randomized; this rule just gives every cloud its shape/color. */
+.cloud {
+    position: absolute;
+    background-color: var(--color-cloud);
+    border-radius: 40%;
 }
 /* trex character styles */
 .trex {
