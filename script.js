@@ -20,7 +20,12 @@ const trexEl = document.getElementById('trex');
 const obstaclesEl = document.getElementById('obstacles');
 const groundEl = document.getElementById('ground');
 const cloudsEl = document.getElementById('clouds');
+const overlayStartEl = document.getElementById('overlay-start');
 const overlayGameoverEl = document.getElementById('overlay-gameover');
+const scoreEl = document.getElementById('score');
+const highScoreEl = document.getElementById('high-score');
+const finalScoreEl = document.getElementById('final-score');
+const SCORE_STORAGE_KEY = 'trex-high-score';
 
 // --- Tunable physics/config constants -----------------------------------
 // Read the T-Rex's resting height (distance from the top of #game down to
@@ -66,7 +71,8 @@ const OBSTACLE_HITBOX_INSET = 2;  // px
 // Everything that changes while the game plays lives in one object, so
 // it's easy to see at a glance and easy to reset() later on restart.
 const state = {
-  isRunning: true,       // will be driven by the start/game-over screens in a later step
+  isRunning: false,
+  score: 0,
   trex: {
     y: 0,                 // height above the ground in px (0 = standing on the ground)
     velocityY: 0,          // current vertical speed in px/s (positive = moving up)
@@ -81,9 +87,83 @@ const state = {
 };
 
 let lastTimestamp = null; // previous frame's timestamp, used to compute delta-time
+let highScore = 0;
 
 function randomBetween(min, max) {
   return min + Math.random() * (max - min);
+}
+
+function formatScore(value) {
+  return String(Math.max(0, Math.floor(value))).padStart(5, '0');
+}
+
+function updateScoreDisplay() {
+  scoreEl.textContent = formatScore(state.score);
+  highScoreEl.textContent = formatScore(highScore);
+}
+
+function loadHighScore() {
+  try {
+    const storedValue = localStorage.getItem(SCORE_STORAGE_KEY);
+    highScore = storedValue ? parseInt(storedValue, 10) : 0;
+  } catch {
+    highScore = 0;
+  }
+
+  if (!Number.isFinite(highScore) || highScore < 0) {
+    highScore = 0;
+  }
+
+  updateScoreDisplay();
+}
+
+function maybeUpdateHighScore() {
+  if (state.score <= highScore) return;
+
+  highScore = state.score;
+  updateScoreDisplay();
+
+  try {
+    localStorage.setItem(SCORE_STORAGE_KEY, String(highScore));
+  } catch {
+    // Ignore storage failures (private mode / disabled storage).
+  }
+}
+
+function resetGameState() {
+  state.isRunning = false;
+  state.score = 0;
+  state.trex.y = 0;
+  state.trex.velocityY = 0;
+  state.trex.isJumping = false;
+  state.runFrameElapsed = 0;
+  state.runFrameToggle = false;
+  state.obstacles.forEach((obstacle) => obstacle.el.remove());
+  state.obstacles = [];
+  state.obstacleSpawnIn = 0;
+  state.groundScrollX = 0;
+  groundEl.style.backgroundPositionX = '0px';
+  cloudsEl.innerHTML = '';
+  state.clouds = [];
+  initClouds();
+  scheduleNextObstacle();
+  trexEl.className = 'trex trex--run-a';
+  renderTrex();
+  updateScoreDisplay();
+}
+
+function showStartScreen() {
+  resetGameState();
+  overlayStartEl.style.display = 'flex';
+  overlayGameoverEl.style.display = 'none';
+}
+
+function startGame() {
+  resetGameState();
+  lastTimestamp = null;
+  state.isRunning = true;
+  overlayStartEl.style.display = 'none';
+  overlayGameoverEl.style.display = 'none';
 }
 
 /* ------------------------------------------------------------------ *
@@ -162,16 +242,26 @@ function spawnObstacle() {
   el.style.height = `${height}px`;
   obstaclesEl.appendChild(el);
 
-  state.obstacles.push({ el, x: startX });
+  state.obstacles.push({ el, x: startX, scored: false });
 }
 
 function updateObstacles(dtSeconds, dtMs) {
   // Move every obstacle left, then drop the ones that have fully
   // scrolled off-screen so the DOM and our tracking array don't grow
   // without bound.
+  const trexRect = trexEl.getBoundingClientRect();
+
   state.obstacles = state.obstacles.filter((obstacle) => {
     obstacle.x -= GAME_SPEED * dtSeconds;
     obstacle.el.style.left = `${obstacle.x}px`;
+
+    const obstacleRect = obstacle.el.getBoundingClientRect();
+    if (!obstacle.scored && obstacleRect.right < trexRect.left) {
+      obstacle.scored = true;
+      state.score += 1;
+      updateScoreDisplay();
+      maybeUpdateHighScore();
+    }
 
     const isOffScreen = obstacle.x + obstacle.el.offsetWidth < 0;
     if (isOffScreen) obstacle.el.remove();
@@ -276,10 +366,14 @@ function isTrexHittingAnObstacle() {
 }
 
 function gameOver() {
+  if (!state.isRunning) return;
+
   state.isRunning = false; // the loop stops calling update()/render() from the next frame on
   trexEl.classList.add('trex--dead');
+  maybeUpdateHighScore();
+  finalScoreEl.textContent = formatScore(state.score);
   overlayGameoverEl.style.display = 'flex';
-  // Populating #final-score is added once the scoring step exists.
+  overlayStartEl.style.display = 'none';
 }
 
 /* ------------------------------------------------------------------ *
@@ -327,6 +421,12 @@ function handleJumpInput(event) {
     return;
   }
   event.preventDefault(); // stop Space from scrolling the page
+
+  if (!state.isRunning) {
+    startGame();
+    return;
+  }
+
   jump();
 }
 
@@ -338,6 +438,6 @@ gameEl.addEventListener('mousedown', handleJumpInput);
  * START THE LOOP
  * ------------------------------------------------------------------ */
 
-scheduleNextObstacle();
-initClouds();
+loadHighScore();
+showStartScreen();
 requestAnimationFrame(loop);
