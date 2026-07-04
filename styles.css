@@ -84,7 +84,6 @@ body{
     left: var(--trex-x);
     width: var(--trex-w);
     height: var(--trex-h);
-    background-color: var(--color-trex);
     box-sizing: border-box;
     will-change: top;
 }
