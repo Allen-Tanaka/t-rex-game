@@ -11,7 +11,6 @@
         <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- SCORE BOARD -->
     <div class="hud">
       <span class="hud__label">SCORE</span>
       <span class="hud__value" id="score">00000</span>
@@ -20,28 +19,14 @@
       <span class="hud__value hud__value--right" id="high-score">00000</span>
     </div>
 
-    <!-- GAME CONTAINER -->
     <div class="game" id="game">
 
-        <!-- Scrolling background: clouds -->
         <div class="clouds" id="clouds">
-            <!-- JS will inject <div class="cloud"> elements here -->
         </div>
 
-        <!-- Ground line that scrolls -->
         <div class="ground" id="ground">
-            <!-- JS will animate scroll-position via CSS custom property -->
         </div>
 
-        <!-- T-Rex character
-            JS hooks: id="trex"
-            Classes JS will toggle:
-                .trex--run-a / .trex--run-b  (leg animation frames)
-                .trex--jump                  (while airborne)
-                .trex--dead                  (on collision)
-        -->
-        
-        <!-- T-Rex character / body -->
         <div class="trex trex--run-a" id="trex" aria-label="T-Rex character">
             <div class="trex__body">
                 <div class="trex__head">
@@ -57,21 +42,14 @@
             </div>
         </div>
 
-        <!-- Obstacles container
-            JS will inject <div class="obstacle"> elements here and remove them
-            when they pass off-screen to the left
-        -->
         <div class="obstacles" id="obstacles"></div>
 
-        <!-- OVERLAY SCREENS -->
-        <!-- Start Screen (visible on load) -->
         <div class="overlay overlay--start" id="overlay-start">
             <p class="overlay__eyebrow">press <kbd>SPACE</kbd> to begin</p>
             <h1 class="overlay__title">T-REX<br/>JUMP</h1>
             <p class="overlay__hint">↑ SPACE or TAP to jump</p>
         </div>
 
-        <!-- Game-over Screen -->
         <div class="overlay overlay--gameover" id="overlay-gameover">
             <p class="overlay__eyebrow">game over</p>
             <p class="overlay__final-score">

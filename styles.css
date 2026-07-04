@@ -1,12 +1,12 @@
 :root {
-  --color-bg:           #1a1a2e;   /* deep navy-charcoal       */
-  --color-ground:       #e8c97a;   /* warm sand                */
-  --color-ground-dark:  #c4a44a;   /* shadow stripe on ground  */
-  --color-trex:         #e8c97a;   /* same sand — pixel dino   */
-  --color-obstacle:     #7ecba1;   /* sage green cacti         */
-  --color-cloud:        #2e3a5a;   /* muted navy cloud         */
-  --color-ui:           #e8c97a;   /* amber for HUD text       */
-  --color-ui-dim:       #6b6b9a;   /* dimmed purple for labels */
+  --color-bg:           #1a1a2e;
+  --color-ground:       #e8c97a;
+  --color-ground-dark:  #c4a44a;
+  --color-trex:         #e8c97a;
+  --color-obstacle:     #7ecba1;
+  --color-cloud:        #2e3a5a;
+  --color-ui:           #e8c97a;
+  --color-ui-dim:       #6b6b9a;
   --color-overlay-bg:   rgba(26, 26, 46, 0.88);
 
   --font-pixel: 'Press Start 2P', monospace;
@@ -14,12 +14,12 @@
   --game-width:   800px;
   --game-height:  260px;
   --ground-h:     8px;
-  --ground-y:     200px;   /* px from top of game where ground sits  */
+  --ground-y:     200px;
 
   --trex-w:   48px;
   --trex-h:   56px;
-  --trex-x:   72px;        /* fixed horizontal position               */
-  --trex-floor: calc(var(--ground-y) - var(--trex-h)); /* resting y   */
+  --trex-x:   72px;
+  --trex-floor: calc(var(--ground-y) - var(--trex-h));
 }
 
 body{
@@ -35,7 +35,6 @@ body{
     -webkit-user-select: none;
 }
 
-/* HUD (score board) styles */
 .hud {
     display: flex;
     justify-content: space-between;
@@ -51,7 +50,6 @@ body{
 }
 .hud__label--right, .hud__value--right { margin-left: auto; }
 
-/* Game container */
 .game {
     position: relative;
     width: var(--game-width);
@@ -62,15 +60,12 @@ body{
     box-sizing: border-box;
 }
 
-/* Ground styles */
 .ground {
     position: absolute;
-    top: var(--ground-y); left: 0; /* aligns with --trex-floor so the T-Rex's feet meet the line */
+    top: var(--ground-y); left: 0;
     width: 100%;
     height: var(--ground-h);
     background-color: var(--color-ground);
-    /* Repeating tick marks give the ground texture, so JS scrolling its
-       background-position actually reads as motion. */
     background-image: repeating-linear-gradient(
         90deg,
         var(--color-ground-dark) 0px, var(--color-ground-dark) 6px,
@@ -78,14 +73,11 @@ body{
     );
 }
 
-/* Cloud styles. Size/position are set inline by JS since each cloud is
-   randomized; this rule just gives every cloud its shape/color. */
 .cloud {
     position: absolute;
     background-color: var(--color-cloud);
     border-radius: 40%;
 }
-/* trex character styles */
 .trex {
     position: absolute;
     top: var(--trex-floor);
@@ -151,14 +143,11 @@ body{
     background-color: var(--color-trex);
     border-radius: 2px 2px 4px 4px;
     transform-origin: top center;
-    transition: transform 0.09s linear; /* matches JS's ~110ms run-frame swap */
+    transition: transform 0.09s linear;
 }
 .trex__leg--front   { right: 4px; }
 .trex__leg--back    { left: 4px; }
 
-/* Obstacle (cactus) styles. Width/height/left are set inline by JS per
-   obstacle since they're randomized; this rule just anchors every
-   obstacle's base to the ground line. */
 .obstacle {
     position: absolute;
     bottom: calc(var(--game-height) - var(--ground-y));
@@ -166,20 +155,16 @@ body{
     border-radius: 2px;
 }
 
-/* Run-cycle leg poses: JS alternates these two classes on #trex while
-   grounded, so the front/back legs swing opposite each other. */
 .trex--run-a .trex__leg--front { transform: rotate(22deg); }
 .trex--run-a .trex__leg--back  { transform: rotate(-22deg); }
 .trex--run-b .trex__leg--front { transform: rotate(-22deg); }
 .trex--run-b .trex__leg--back  { transform: rotate(22deg); }
 
-/* Jump pose: legs tuck up beneath the body while airborne. */
 .trex--jump .trex__leg--front,
 .trex--jump .trex__leg--back {
     transform: rotate(0deg) scaleY(0.6);
 }
 
-/* Game-over pose: character dims out and freezes. */
 .trex--dead {
     filter: grayscale(1) brightness(0.75);
 }
@@ -187,9 +172,7 @@ body{
 .trex--dead .trex__leg--back {
     transition: none;
 }
-/* trex character styles */
 
-/* Overlay screens (start / game-over) */
 .overlay {
     position: absolute;
     inset: 0;
@@ -204,7 +187,6 @@ body{
     background-color: var(--color-overlay-bg);
     z-index: 10;
 }
-/* Game-over screen is hidden until JS reveals it on collision. */
 .overlay--gameover {
     display: none;
 }
@@ -236,7 +218,6 @@ kbd {
     color: var(--color-ui);
 }
 
-/* Responsive adjustments for smaller screens */
 @media (max-width: 860px) {
   :root {
     --game-width: 94vw;
@@ -244,7 +225,6 @@ kbd {
   .hud { width: 94vw; }
 }
 
-/* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
   .trex__leg {transition: none;}
 }
